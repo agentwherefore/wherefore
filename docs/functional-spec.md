@@ -195,5 +195,7 @@ anything real. This governs every functional requirement below.
 
 ## 8. Open Product Questions
 
-- **License (open source vs. private):** deferred until after V1/Phase 2–3
-  validate real usage.
+- **License:** decided — source-available (not open source), free for
+  individuals and organizations under 5 people, commercial license required
+  above that, converting to AGPL-3.0 on 2030-09-07. See `LICENSE` at repo
+  root and CLAUDE.md's Core Decisions.

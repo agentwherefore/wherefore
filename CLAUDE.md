@@ -97,7 +97,21 @@ the traceability feature working.
 - Deferred, on purpose, not by oversight: audio transcription, the
   Salesforce adapter implementation. Don't build toward these without being
   asked.
-- **Open source, AGPL-3.0.** Decided — see `LICENSE` at repo root. Chosen
-  specifically over plain GPL-3.0 because this is a web app: AGPL closes the
-  network-use gap (a modified version run as a hosted service must also
-  release its source), which plain GPL does not require.
+- **Source-available (not open source), free under 5 people, commercial
+  license above that.** See `LICENSE` at repo root — the "Wherefore Source
+  License 1.0," adapted from the Business Source License 1.1 template
+  (mariadb.com/bsl11), not AGPL-3.0 outright. AGPL-3.0 itself can't carry a
+  usage restriction and still legally be AGPL-3.0 or qualify as open
+  source — that's why this isn't just "AGPL-3.0 with a note." The
+  Additional Use Grant in LICENSE lets individuals and organizations under
+  5 total people use it for anything; everyone else needs a commercial
+  license, requested via the published Google Form linked in LICENSE. The
+  license automatically converts to AGPL-3.0 (full text at
+  `licenses/AGPL-3.0.txt`) on the Change Date, 2030-09-07 — chosen so the
+  network-use gap (a hosted fork must release its source) still applies
+  even after conversion. Per BSL's own design, each new release should get
+  a fresh Change Date in its own LICENSE file — that's the mechanism for
+  keeping the current version under commercial terms indefinitely while
+  older versions age into full AGPL-3.0 on schedule; don't just edit this
+  Change Date in place for the same version, that breaks the commitment
+  the license makes to existing users of it.

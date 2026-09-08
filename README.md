@@ -64,7 +64,7 @@ Source-available, not open source: the [Wherefore Source License 1.0](LICENSE)
 (adapted from the Business Source License 1.1 template). Free to use for any
 purpose if you're an individual using it personally, or an organization with
 fewer than 5 total employees/members. Anyone else needs a commercial license
-— see the LICENSE file for how to request one.
+— [request one here](https://docs.google.com/forms/d/e/1FAIpQLSe_GEycd28k4l_sNgBL1mwlj_L1iZI-aOsq21iLq3wQEQH9mA/viewform).
 
 This automatically converts to the [GNU AGPL v3.0](licenses/AGPL-3.0.txt) —
 a real open-source license — on 2030-09-07, per the terms in LICENSE. If a

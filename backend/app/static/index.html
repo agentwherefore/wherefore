@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wherefore — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root{
+    --navy:#1E2761;
+    --navy-dark:#141A45;
+    --ice:#CADCFC;
+    --amber:#F5A623;
+    --amber-dark:#C97F0E;
+    --white:#FFFFFF;
+    --bg:#F5F7FB;
+    --card:#FFFFFF;
+    --border:#E2E7F3;
+    --text:#1E2233;
+    --muted:#6B7280;
+    --success:#2E9E6D;
+    --radius:10px;
+    --radius-sm:6px;
+    --shadow:0 10px 30px rgba(30,39,97,.10);
+    --shadow-lg:0 20px 50px rgba(20,26,69,.28);
+    --ease:cubic-bezier(.22,.9,.32,1);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    height:100vh;
+    overflow:hidden;
+  }
+  .brand-font{font-family:'Lora',serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  button{font-family:inherit;cursor:pointer;}
+  a{color:inherit;}
+  ::selection{background:var(--amber);color:var(--navy);}
+
+  /* focus visibility (accessibility floor) */
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible{
+    outline:2px solid var(--amber);
+    outline-offset:2px;
+    border-radius:4px;
+  }
+
+  .app{
+    display:grid;
+    grid-template-columns:220px 1fr;
+    height:100vh;
+    width:100%;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    background:var(--navy);
+    color:var(--white);
+    display:flex;
+    flex-direction:column;
+    padding:22px 16px;
+  }
+  .wordmark{
+    font-family:'Lora',serif;
+    font-weight:700;
+    font-size:19px;
+    letter-spacing:.2px;
+    padding:4px 10px 26px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .wordmark .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--amber);
+    display:inline-block;
+  }
+  .nav{display:flex;flex-direction:column;gap:2px;}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 12px;border-radius:var(--radius-sm);
+    font-size:13.5px;font-weight:500;
+    color:#AEB4D9;
+    background:transparent;border:none;text-align:left;width:100%;
+    transition:background .15s var(--ease),color .15s var(--ease);
+  }
+  .nav-item:hover{background:#232C6B;color:var(--white);}
+  .nav-item.active{background:#283374;color:var(--white);}
+  .nav-item.active .nav-dot{background:var(--amber);}
+  .nav-icon{width:16px;height:16px;flex:none;opacity:.9;}
+  .sidebar-foot{
+    margin-top:auto;
+    padding:14px 12px;
+    font-size:11.5px;
+    color:#7B84B3;
+    border-top:1px solid #2A3373;
+  }
+
+  /* ---------- Main shell ---------- */
+  .main{
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+    height:100vh;
+  }
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 28px;
+    border-bottom:1px solid var(--border);
+    background:var(--card);
+    flex:none;
+  }
+  .crumbs{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .crumbs b{color:var(--text);font-weight:600;}
+  .topbar-right{display:flex;align-items:center;gap:14px;}
+  .avatar{
+    width:30px;height:30px;border-radius:50%;
+    background:var(--ice);color:var(--navy);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:12.5px;
+  }
+  .canvas{
+    flex:1;
+    overflow-y:auto;
+    padding:32px 40px 60px;
+    position:relative;
+  }
+  .view{display:none;animation:fadeUp .35s var(--ease);}
+  .view.active{display:block;}
+  @keyframes fadeUp{
+    from{opacity:0;transform:translateY(6px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+
+  h1.page-title{
+    font-family:'Lora',serif;font-weight:700;
+    font-size:24px;margin:0 0 4px;color:var(--navy);
+  }
+  p.page-sub{margin:0 0 28px;color:var(--muted);font-size:14px;}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:10px 18px;border-radius:var(--radius-sm);
+    font-size:13.5px;font-weight:600;border:1px solid transparent;
+    transition:transform .12s var(--ease),box-shadow .12s var(--ease),background .12s var(--ease);
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--amber);color:var(--navy-dark);}
+  .btn-primary:hover{background:#FFB53D;box-shadow:0 6px 16px rgba(245,166,35,.35);}
+  .btn-ghost{background:var(--white);color:var(--text);border-color:var(--border);}
+  .btn-ghost:hover{border-color:var(--navy);}
+  .btn-dark{background:var(--navy);color:var(--white);}
+  .btn-dark:hover{background:var(--navy-dark);}
+  .btn[disabled]{opacity:.45;cursor:not-allowed;}
+  .btn-sm{padding:6px 12px;font-size:12px;}
+
+  /* ---------- Dashboard ---------- */
+  .dash-head{display:flex;align-items:flex-start;justify-content:space-between;}
+  .project-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:22px;}
+  .project-card{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:18px;transition:box-shadow .15s var(--ease),transform .15s var(--ease);
+    text-align:left;width:100%;
+  }
+  .project-card.clickable:hover{box-shadow:var(--shadow);transform:translateY(-2px);}
+  .project-card.disabled{opacity:.55;cursor:not-allowed;}
+  .status-pill{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;
+    margin-bottom:12px;
+  }
+  .status-pill.draft{background:#FDEFD6;color:#8A5A08;}
+  .status-pill.review{background:var(--ice);color:var(--navy);}
+  .status-pill.pushed{background:#E1F3EA;color:#177A4E;}
+  .status-pill.locked{background:#EEF0F5;color:var(--muted);}
+  .project-card h3{margin:0 0 6px;font-size:15px;font-family:'Lora',serif;font-weight:700;color:var(--navy);}
+  .project-card .meta{font-size:12px;color:var(--muted);}
+  .new-project-card{
+    border:1.5px dashed #C7CEE3;border-radius:var(--radius);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+    padding:18px;min-height:118px;color:var(--muted);font-weight:600;font-size:13px;
+    background:transparent;width:100%;transition:border-color .15s,color .15s;
+  }
+  .new-project-card:hover{border-color:var(--navy);color:var(--navy);}
+
+  /* ---------- Form ---------- */
+  .form-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:760px;box-shadow:var(--shadow);}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+  label.field-label{display:block;font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.4px;margin-bottom:6px;text-transform:uppercase;}
+  input[type=text], select{
+    width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+    font-size:14px;font-family:inherit;color:var(--text);background:var(--white);
+  }
+  select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%231E2761' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;}
+  input[type=text]:focus, select:focus{border-color:var(--navy);outline:none;box-shadow:0 0 0 3px rgba(30,39,97,.12);}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:5px;font-style:italic;}
+  .dropzones{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:26px;}
+  .dropzone{
+    border:1.5px dashed #C7CEE3;border-radius:var(--radius);padding:26px 14px;text-align:center;
+    background:#FAFBFE;transition:border-color .15s,background .15s;
+  }
+  .dropzone:hover{border-color:var(--navy);background:#F3F6FD;}
+  .dz-icon{
+    width:38px;height:38px;border-radius:50%;background:var(--ice);color:var(--navy);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 10px;
+  }
+  .dz-title{font-size:13px;font-weight:600;color:var(--navy);}
+  .dz-sub{font-size:11.5px;color:var(--muted);margin-top:3px;}
+  .form-actions{display:flex;justify-content:flex-end;gap:10px;}
+  .uploaded-file-list{list-style:none;margin:14px 0 0;padding:0;}
+  .uploaded-file-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);padding:6px 0;border-top:1px solid var(--border);width:100%;background:none;border-left:none;border-right:none;border-bottom:none;text-align:left;}
+  .uploaded-file-row:first-child{border-top:none;}
+  button.uploaded-file-row:hover .uf-name{color:var(--amber-dark);text-decoration:underline;}
+  .uploaded-file-row .uf-type{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;}
+  .uploaded-file-row .uf-name{flex:1;}
+  .uf-processed{font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:10px;flex:none;}
+  .uf-processed.uf-new{color:var(--navy);background:var(--ice);}
+
+  /* ---------- File preview modal ---------- */
+  .file-preview-modal{
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-48%) scale(.98);
+    width:640px;max-width:92vw;max-height:82vh;background:var(--card);border-radius:14px;
+    box-shadow:var(--shadow-lg);z-index:58;display:flex;flex-direction:column;overflow:hidden;
+    opacity:0;pointer-events:none;transition:opacity .22s var(--ease),transform .22s var(--ease);
+  }
+  .file-preview-modal.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
+  .file-preview-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex:none;}
+  .file-preview-type{font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);}
+  .file-preview-name{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--navy);font-weight:600;margin-top:2px;}
+  .file-preview-body{flex:1;overflow:auto;padding:20px;background:var(--bg);}
+  .file-preview-body img{max-width:100%;display:block;margin:0 auto;border:1px solid var(--border);border-radius:8px;background:var(--white);}
+  .file-preview-body pre{white-space:pre-wrap;word-break:break-word;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.6;color:var(--text);margin:0;}
+  .file-preview-close{background:none;border:none;color:var(--muted);width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+  .file-preview-close:hover{background:var(--bg);color:var(--navy);}
+  .empty-hint{font-size:12px;color:var(--muted);font-style:italic;margin-top:12px;}
+
+  /* ---------- Processing ---------- */
+  .proc-wrap{max-width:520px;}
+  .proc-list{list-style:none;margin:26px 0 0;padding:0;}
+  .proc-item{
+    display:flex;align-items:center;gap:12px;padding:13px 0;
+    border-bottom:1px solid var(--border);color:#B9BFCF;font-size:14px;font-weight:500;
+    transition:color .2s;
+  }
+  .proc-item:last-child{border-bottom:none;}
+  .proc-item.active{color:var(--text);}
+  .proc-item.done{color:var(--text);}
+  .proc-marker{width:20px;height:20px;flex:none;position:relative;}
+  .proc-spinner{
+    width:16px;height:16px;border-radius:50%;border:2.5px solid #E2E7F3;border-top-color:var(--navy);
+    animation:spin .7s linear infinite;display:none;
+  }
+  .proc-item.active .proc-spinner{display:block;}
+  .proc-check{display:none;color:var(--success);}
+  .proc-item.done .proc-check{display:block;}
+  .proc-item.done .proc-spinner{display:none;}
+  .proc-dot{width:8px;height:8px;border-radius:50%;background:#D8DCE9;}
+  .proc-item.active .proc-dot, .proc-item.done .proc-dot{display:none;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .proc-cta{margin-top:26px;opacity:0;transform:translateY(6px);transition:opacity .35s var(--ease),transform .35s var(--ease);pointer-events:none;}
+  .proc-cta.show{opacity:1;transform:translateY(0);pointer-events:auto;}
+
+  /* ---------- Review ---------- */
+  .review-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;}
+  .platform-toggle{display:inline-flex;background:var(--card);border:1px solid var(--border);border-radius:30px;padding:3px;flex:none;}
+  .pt-btn{background:none;border:none;padding:7px 14px;border-radius:24px;font-size:12px;font-weight:600;color:var(--muted);}
+  .pt-btn.active{background:var(--navy);color:var(--white);}
+  .tabs{display:flex;gap:22px;border-bottom:1px solid var(--border);margin:18px 0 20px;}
+  .tab{
+    background:none;border:none;padding:0 0 10px;font-size:13.5px;font-weight:600;color:var(--muted);
+    border-bottom:2px solid transparent;margin-bottom:-1px;
+  }
+  .tab.active{color:var(--navy);border-bottom-color:var(--amber);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;animation:fadeUp .25s var(--ease);}
+
+  table.field-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  table.field-table th{
+    background:var(--navy);color:var(--white);text-align:left;font-size:11.5px;
+    letter-spacing:.3px;text-transform:uppercase;padding:11px 14px;font-weight:600;
+  }
+  table.field-table td{padding:12px 14px;font-size:13.5px;border-top:1px solid var(--border);vertical-align:middle;}
+  table.field-table tr.needs-review td{background:#FFFBF0;}
+  tr.field-entity-row td{
+    background:var(--ice);color:var(--navy);font-weight:700;font-size:11px;
+    letter-spacing:.4px;text-transform:uppercase;padding:8px 14px;border-top:none;
+  }
+  .review-reason-tag{display:block;font-size:10.5px;color:var(--amber-dark);font-weight:600;margin-top:3px;}
+  .field-primary-tag{display:block;font-size:10px;font-weight:700;color:var(--navy);letter-spacing:.2px;margin-top:2px;}
+  .field-choice-values{display:block;font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:3px;}
+  .trace-reason-tag{background:#5A4308;color:#FFE6AE;font-size:11px;font-weight:700;padding:5px 10px;border-radius:6px;margin-bottom:14px;align-self:flex-start;}
+  .source-link{
+    display:inline-flex;align-items:center;gap:6px;background:none;border:none;padding:2px 0;
+    color:var(--navy);font-size:12.5px;font-family:'IBM Plex Mono',monospace;font-weight:500;
+    border-bottom:1px dashed #9AA3C9;
+  }
+  .source-link:hover{color:var(--amber-dark);border-bottom-color:var(--amber-dark);}
+  .row-flash{animation:flashRow .9s var(--ease);}
+  @keyframes flashRow{0%{background:#FDECC8;}100%{background:transparent;}}
+  .status-icon{width:18px;height:18px;display:inline-flex;}
+  .status-icon.ok{color:var(--success);}
+  .status-icon.review{color:var(--amber-dark);}
+  .field-type{font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+
+  .review-footer{display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding:16px 4px 0;}
+  .review-summary{font-size:13px;color:var(--muted);}
+
+  .story-tree{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;}
+  .process-flow-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;}
+  #process-flow-diagram{overflow-x:auto;}
+  #process-flow-diagram svg{max-width:100%;height:auto;}
+  .flow-review-note{font-size:12.5px;color:var(--amber-dark);margin-top:6px;}
+  .flow-review-note b{color:var(--navy);}
+  .story-epic{font-family:'Lora',serif;font-weight:700;color:var(--navy);font-size:15px;margin-bottom:4px;}
+  .story-feature{font-size:13px;color:var(--muted);margin:0 0 16px 18px;}
+  .story-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-left:18px;}
+  .story-card p{margin:0 0 8px;font-style:italic;font-size:13.5px;}
+  .ac-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.3px;text-transform:uppercase;}
+  .ac-text{font-size:12.5px;color:var(--text);font-family:'IBM Plex Mono',monospace;margin-top:4px;}
+  .ac-list{font-size:12.5px;color:var(--text);font-family:'IBM Plex Mono',monospace;margin:4px 0 0;padding-left:18px;}
+  .ac-list li{margin-bottom:6px;}
+  .ac-list li:last-child{margin-bottom:0;}
+  .story-source{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:10px;}
+  .story-group{margin-bottom:22px;}
+  .story-group:last-child{margin-bottom:0;}
+
+  table.rbp-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  table.rbp-table th, table.rbp-table td{padding:12px 14px;text-align:center;border-top:1px solid var(--border);font-size:13px;}
+  table.rbp-table th{background:var(--navy);color:var(--white);font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;}
+  table.rbp-table td:first-child, table.rbp-table th:first-child{text-align:left;font-weight:600;color:var(--navy);}
+  table.rbp-table td:nth-child(2), table.rbp-table th:nth-child(2){text-align:left;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);}
+  .rbp-yes{color:var(--success);font-weight:700;}
+  .rbp-no{color:#C7CCDA;}
+  .rbp-note{font-size:10.5px;color:var(--muted);display:block;font-weight:400;}
+
+  /* ---------- Traceability index view ---------- */
+  .trace-index-list{display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  .trace-index-row{
+    background:var(--card);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;
+    border:none;width:100%;text-align:left;
+  }
+  .trace-index-row:hover{background:#FAFBFE;}
+  .tir-left{display:flex;align-items:center;gap:12px;}
+  .tir-badge{width:30px;height:30px;border-radius:8px;background:var(--ice);color:var(--navy);display:flex;align-items:center;justify-content:center;flex:none;}
+  .tir-name{font-size:13.5px;font-weight:600;}
+  .tir-project{font-size:11.5px;color:var(--muted);}
+  .tir-source{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--navy);}
+
+  /* ---------- Settings stub ---------- */
+  .settings-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;max-width:520px;}
+  .settings-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);font-size:13.5px;}
+  .settings-row:last-child{border-bottom:none;}
+  .settings-row span.k{color:var(--muted);}
+
+  /* ---------- Trace panel (drawer) ---------- */
+  .scrim{
+    position:fixed;inset:0;background:rgba(20,26,69,.35);opacity:0;pointer-events:none;
+    transition:opacity .25s var(--ease);z-index:40;
+  }
+  .scrim.show{opacity:1;pointer-events:auto;}
+  .trace-panel{
+    position:fixed;top:0;right:0;height:100vh;width:400px;max-width:92vw;
+    background:var(--navy);color:var(--white);z-index:50;
+    box-shadow:var(--shadow-lg);
+    transform:translateX(100%);transition:transform .32s var(--ease);
+    display:flex;flex-direction:column;padding:26px 26px 24px;
+  }
+  .trace-panel.show{transform:translateX(0);}
+  .trace-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;}
+  .trace-eyebrow{font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--amber);text-transform:uppercase;}
+  .trace-close{background:none;border:none;color:#AEB4D9;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+  .trace-close:hover{background:#283374;color:var(--white);}
+  .trace-source-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+  .trace-source-icon{width:34px;height:34px;border-radius:8px;background:#283374;display:flex;align-items:center;justify-content:center;flex:none;color:var(--amber);}
+  .trace-source-label{font-size:14px;font-weight:700;font-family:'IBM Plex Mono',monospace;}
+  .trace-quote{
+    background:#283374;border-radius:var(--radius-sm);padding:16px 18px;font-style:italic;
+    font-size:13.5px;line-height:1.55;color:var(--ice);margin-bottom:20px;
+  }
+  .trace-why-label{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:8px;}
+  .trace-why-text{font-size:13.5px;line-height:1.55;color:var(--white);margin-bottom:auto;}
+  .trace-field-name{font-size:11.5px;color:#8890BC;margin-top:22px;}
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--navy-dark);color:var(--white);padding:13px 22px;border-radius:30px;
+    font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:10px;
+    box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:opacity .25s var(--ease),transform .25s var(--ease);
+    z-index:60;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast svg{color:var(--success);flex:none;}
+
+  /* ---------- Chat ---------- */
+  .chat-fab{
+    position:fixed;bottom:26px;right:26px;width:54px;height:54px;border-radius:50%;
+    background:var(--amber);border:none;box-shadow:var(--shadow-lg);
+    display:flex;align-items:center;justify-content:center;color:var(--navy-dark);
+    z-index:55;transition:transform .18s var(--ease);
+  }
+  .chat-fab:hover{transform:scale(1.06);}
+  .chat-fab .dot{
+    position:absolute;top:6px;right:6px;width:9px;height:9px;border-radius:50%;
+    background:var(--success);border:2px solid var(--navy-dark);
+  }
+  .chat-panel{
+    position:fixed;bottom:96px;right:26px;width:380px;max-width:92vw;height:540px;max-height:75vh;
+    background:var(--white);border-radius:16px;box-shadow:var(--shadow-lg);
+    display:flex;flex-direction:column;overflow:hidden;z-index:56;
+    transform:translateY(16px) scale(.98);opacity:0;pointer-events:none;
+    transition:transform .22s var(--ease),opacity .22s var(--ease);
+  }
+  .chat-panel.show{transform:translateY(0) scale(1);opacity:1;pointer-events:auto;}
+  .chat-header{
+    background:var(--navy);color:var(--white);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex:none;
+  }
+  .chat-title{font-family:'Lora',serif;font-weight:700;font-size:14.5px;}
+  .chat-context{font-size:11px;color:var(--ice);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+  .chat-close{background:none;border:none;color:#AEB4D9;width:26px;height:26px;border-radius:6px;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .chat-close:hover{background:#283374;color:var(--white);}
+  .chat-thread{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--bg);}
+  .chat-msg{max-width:85%;padding:10px 13px;border-radius:12px;font-size:13px;line-height:1.5;}
+  .chat-msg.assistant{background:var(--white);border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:3px;}
+  .chat-msg.user{background:var(--navy);color:var(--white);align-self:flex-end;border-bottom-right-radius:3px;}
+  .chat-msg.error{background:#FDECEC;border:1px solid #F3C6C6;color:#9A3B3B;align-self:flex-start;font-style:italic;}
+  .chat-typing{align-self:flex-start;display:flex;gap:4px;padding:10px 13px;background:var(--white);border:1px solid var(--border);border-radius:12px;border-bottom-left-radius:3px;}
+  .chat-typing span{width:6px;height:6px;border-radius:50%;background:#B9BFCF;animation:typingBounce 1.1s infinite ease-in-out;}
+  .chat-typing span:nth-child(2){animation-delay:.15s;}
+  .chat-typing span:nth-child(3){animation-delay:.3s;}
+  @keyframes typingBounce{0%,60%,100%{transform:translateY(0);opacity:.5;}30%{transform:translateY(-4px);opacity:1;}}
+  .chat-note-row{padding:0 16px;background:var(--bg);flex:none;}
+  .btn-note{
+    width:100%;margin:0 0 10px;padding:8px 10px;border-radius:8px;border:1px dashed #C7CEE3;
+    background:var(--white);color:var(--navy);font-size:11.5px;font-weight:600;
+  }
+  .btn-note:hover{border-color:var(--navy);}
+  .chat-input-row{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border);background:var(--white);flex:none;}
+  .chat-input-row textarea{
+    flex:1;resize:none;border:1px solid var(--border);border-radius:10px;padding:9px 11px;
+    font-family:inherit;font-size:13px;max-height:80px;
+  }
+  .chat-input-row textarea:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,39,97,.12);}
+  .chat-send{
+    width:38px;height:38px;border-radius:10px;background:var(--amber);border:none;flex:none;
+    display:flex;align-items:center;justify-content:center;color:var(--navy-dark);font-size:16px;font-weight:700;
+  }
+  .chat-send:hover{background:#FFB53D;}
+  .chat-send[disabled]{opacity:.5;}
+
+  .notes-section{margin-top:22px;}
+  .notes-title{font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px;}
+  .note-card{background:#FFFBF0;border:1px solid #F0DFB0;border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;font-size:13px;}
+  .note-card .note-tag{font-size:10px;font-weight:700;color:var(--amber-dark);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;display:block;}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:840px){
+    .app{grid-template-columns:74px 1fr;}
+    .wordmark span.wm-text, .nav-item span.nav-text, .sidebar-foot{display:none;}
+    .wordmark{justify-content:center;padding:4px 0 22px;}
+    .nav-item{justify-content:center;}
+    .field-row, .dropzones{grid-template-columns:1fr;}
+    .canvas{padding:24px 18px 50px;}
+    .trace-panel{width:100vw;max-width:100vw;}
+    .chat-panel{right:12px;bottom:88px;width:calc(100vw - 24px);height:65vh;}
+    .chat-fab{right:16px;bottom:16px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important;transition-duration:.001ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <nav class="sidebar" aria-label="Primary">
+    <div class="wordmark"><span class="dot"></span><span class="wm-text">Wherefore</span></div>
+    <div class="nav">
+      <button class="nav-item active" data-nav="dashboard" aria-current="page">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        <span class="nav-text">Dashboard</span>
+      </button>
+      <button class="nav-item" data-nav="dashboard">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
+        <span class="nav-text">Projects</span>
+      </button>
+      <button class="nav-item" data-nav="traceability">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        <span class="nav-text">Traceability</span>
+      </button>
+      <button class="nav-item" data-nav="settings">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span class="nav-text">Settings</span>
+      </button>
+    </div>
+    <div class="sidebar-foot">Prototype build · synthetic data only</div>
+  </nav>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <div class="topbar">
+      <div class="crumbs" id="crumbs">Wherefore / <b>Dashboard</b></div>
+      <div class="topbar-right">
+        <div class="avatar">DC</div>
+      </div>
+    </div>
+
+    <div class="canvas" id="canvas">
+
+      <!-- ===== DASHBOARD ===== -->
+      <section class="view active" id="view-dashboard">
+        <div class="dash-head">
+          <div>
+            <h1 class="page-title">Projects</h1>
+            <p class="page-sub">Every engagement's discovery material, drafts, and traceability in one place.</p>
+          </div>
+        </div>
+        <div class="project-grid" id="project-grid">
+          <button class="new-project-card" data-nav="new-project">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Project
+          </button>
+        </div>
+      </section>
+
+      <!-- ===== NEW PROJECT ===== -->
+      <section class="view" id="view-new-project">
+        <h1 class="page-title">New Project</h1>
+        <p class="page-sub">Name the engagement and pick a target platform — you'll attach discovery material next.</p>
+        <div class="form-card">
+          <div class="field-row">
+            <div>
+              <label class="field-label">Project name</label>
+              <input type="text" id="proj-name" placeholder="e.g. Riverside County Permits Portal">
+            </div>
+            <div>
+              <label class="field-label">Target platform</label>
+              <select id="proj-platform">
+                <option value="d365">Dynamics 365</option>
+                <option value="salesforce">Salesforce</option>
+              </select>
+              <div class="hint">Changes field-type vocabulary in the draft review — try switching it later.</div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-ghost" data-nav="dashboard">Cancel</button>
+            <button class="btn btn-primary" id="btn-create-project">Create Project →</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== PROJECT DETAIL / UPLOAD ===== -->
+      <section class="view" id="view-project-detail">
+        <h1 class="page-title" id="pd-title">Project</h1>
+        <p class="page-sub" id="pd-sub">Attach discovery material — extraction runs once this is built out in a later step.</p>
+        <div class="form-card">
+          <div class="dropzones">
+            <label class="dropzone" for="pd-transcript-input" style="cursor:pointer;display:block;">
+              <div class="dz-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+              <div class="dz-title">Discovery Transcript</div>
+              <div class="dz-sub">Click to choose a .txt file</div>
+            </label>
+            <input type="file" id="pd-transcript-input" accept=".txt,.md,text/plain" style="display:none;">
+            <label class="dropzone" for="pd-screenshot-input" style="cursor:pointer;display:block;">
+              <div class="dz-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.9A7 7 0 1115.71 8h1.79a4.5 4.5 0 010 9H6a3.5 3.5 0 01-2-6.36"/></svg></div>
+              <div class="dz-title">Screenshots</div>
+              <div class="dz-sub">Click to choose one or more images</div>
+            </label>
+            <input type="file" id="pd-screenshot-input" accept="image/*" multiple style="display:none;">
+            <label class="dropzone" for="pd-recording-input" style="cursor:pointer;display:block;">
+              <div class="dz-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></div>
+              <div class="dz-title">Recordings</div>
+              <div class="dz-sub">Click to choose one or more videos</div>
+            </label>
+            <input type="file" id="pd-recording-input" accept="video/*" multiple style="display:none;">
+          </div>
+          <div>
+            <label class="field-label">Uploaded so far</label>
+            <ul class="uploaded-file-list" id="pd-file-list"></ul>
+            <div class="empty-hint" id="pd-empty-hint">Nothing uploaded yet.</div>
+          </div>
+          <div class="form-actions" style="margin-top:22px;justify-content:space-between;">
+            <button class="btn btn-ghost" data-nav="dashboard">Back to Dashboard</button>
+            <button class="btn btn-primary" id="btn-generate-draft">Generate Draft &amp; Review Stories/Fields →</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== PROCESSING ===== -->
+      <section class="view" id="view-processing">
+        <h1 class="page-title" id="proc-page-title">Generating Draft</h1>
+        <p class="page-sub" id="proc-page-sub">Extraction in progress — this can take a minute or two on real material.</p>
+        <div class="proc-wrap">
+          <ul class="proc-list" id="proc-list">
+            <li class="proc-item" data-step="screenshots"><span class="proc-marker"><span class="proc-dot"></span><span class="proc-spinner"></span><svg class="proc-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Reading screenshots</li>
+            <li class="proc-item" data-step="transcript"><span class="proc-marker"><span class="proc-dot"></span><span class="proc-spinner"></span><svg class="proc-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Parsing transcript</li>
+            <li class="proc-item" data-step="fields"><span class="proc-marker"><span class="proc-dot"></span><span class="proc-spinner"></span><svg class="proc-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Drafting field listing</li>
+            <li class="proc-item" data-step="stories"><span class="proc-marker"><span class="proc-dot"></span><span class="proc-spinner"></span><svg class="proc-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Drafting story tree</li>
+            <li class="proc-item" data-step="rbp"><span class="proc-marker"><span class="proc-dot"></span><span class="proc-spinner"></span><svg class="proc-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Drafting RBP matrix</li>
+            <li class="proc-item" data-step="process_flow"><span class="proc-marker"><span class="proc-dot"></span><span class="proc-spinner"></span><svg class="proc-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Mapping process flow</li>
+          </ul>
+          <div class="proc-cta" id="proc-cta">
+            <button class="btn btn-primary" id="btn-view-generated-draft">View Draft →</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== REVIEW ===== -->
+      <section class="view" id="view-review">
+        <div class="review-head">
+          <div>
+            <h1 class="page-title" id="review-title">Acme Field Ops Case Management</h1>
+            <p class="page-sub" id="review-sub" style="margin-bottom:0;">Draft review — click any Source to see exactly where it came from.</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex:none;">
+            <button class="btn btn-ghost btn-sm" id="btn-add-followup" style="display:none;">+ Add Follow-Up Meeting</button>
+            <div class="platform-toggle" role="group" aria-label="Preview as platform">
+              <button class="pt-btn active" data-platform="d365">Dynamics 365</button>
+              <button class="pt-btn" data-platform="salesforce">Salesforce</button>
+            </div>
+          </div>
+        </div>
+        <div class="tabs">
+          <button class="tab active" data-tab="fields">Field Listing</button>
+          <button class="tab" data-tab="process-flow">Process Flow</button>
+          <button class="tab" data-tab="stories">Story Tree</button>
+          <button class="tab" data-tab="rbp">RBP Matrix</button>
+        </div>
+
+        <div class="tab-panel active" id="tab-fields">
+          <table class="field-table">
+            <thead>
+              <tr><th>Field</th><th>Section</th><th id="type-col-header">Dataverse Type</th><th>Required</th><th>Source</th><th>Status</th></tr>
+            </thead>
+            <tbody id="field-tbody"><!-- rows injected by JS --></tbody>
+          </table>
+          <div class="review-footer">
+            <div class="review-summary"></div>
+            <button class="btn btn-primary" id="btn-approve">Approve All &amp; Continue →</button>
+          </div>
+          <div class="notes-section" id="notes-section" style="display:none;">
+            <div class="notes-title">Consultant notes (added via chat)</div>
+            <div id="notes-list"></div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-process-flow">
+          <p class="page-sub" style="margin:0 0 16px;">The current (as-is) process, as described in the discovery transcript — not the future system being designed.</p>
+          <div class="process-flow-card">
+            <div id="process-flow-diagram"></div>
+            <div id="process-flow-notes"></div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-stories">
+          <div class="story-tree" id="story-tree-container"><!-- rendered by JS --></div>
+        </div>
+
+        <div class="tab-panel" id="tab-rbp">
+          <table class="rbp-table">
+            <thead><tr><th>Role</th><th>Entity</th><th>Create</th><th>Read</th><th>Update</th><th>Delete</th><th>Reassign</th></tr></thead>
+            <tbody id="rbp-tbody"><!-- rendered by JS --></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== TRACEABILITY INDEX ===== -->
+      <section class="view" id="view-traceability">
+        <h1 class="page-title">Traceability Index</h1>
+        <p class="page-sub">Every drafted item, across every project, linked back to its source. Click any row.</p>
+        <div class="trace-index-list" id="trace-index-list"><!-- injected --></div>
+      </section>
+
+      <!-- ===== SETTINGS ===== -->
+      <section class="view" id="view-settings">
+        <h1 class="page-title">Settings</h1>
+        <p class="page-sub">Illustrative in this prototype.</p>
+        <div class="settings-card">
+          <div class="settings-row"><span class="k">Default target platform</span><span>Dynamics 365</span></div>
+          <div class="settings-row"><span class="k">Backlog integration</span><span>Azure DevOps</span></div>
+          <div class="settings-row"><span class="k">Data retention</span><span>Session only</span></div>
+          <div class="settings-row"><span class="k">Workspace</span><span>Personal (synthetic data)</span></div>
+        </div>
+
+        <div class="settings-card" style="margin-top:18px;">
+          <div class="settings-row">
+            <span class="k">Claude Code CLI</span>
+            <span id="settings-cli-status">Checking…</span>
+          </div>
+          <div style="padding:14px 0 4px;">
+            <button class="btn btn-dark btn-sm" id="btn-claude-cli-signin">Sign in with Claude Code →</button>
+          </div>
+          <pre id="settings-cli-log" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11.5px;font-family:'IBM Plex Mono',monospace;max-height:160px;overflow:auto;margin-top:6px;white-space:pre-wrap;"></pre>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============ TRACE PANEL ============ -->
+<div class="scrim" id="scrim"></div>
+<aside class="trace-panel" id="trace-panel" aria-hidden="true">
+  <div class="trace-head">
+    <div class="trace-eyebrow">Source</div>
+    <button class="trace-close" id="trace-close" aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="trace-source-row">
+    <div class="trace-source-icon">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+    </div>
+    <div class="trace-source-label" id="trace-source-label">Transcript · 04:12</div>
+  </div>
+  <div class="trace-reason-tag" id="trace-reason-tag" style="display:none;"></div>
+  <div class="trace-quote" id="trace-quote">"…"</div>
+  <div class="trace-why-label">Why this matters</div>
+  <div class="trace-why-text" id="trace-why-text">—</div>
+  <div class="trace-field-name" id="trace-field-name">Field: —</div>
+  <div class="trace-field-name" id="trace-field-location">Entity: — · Section: —</div>
+  <button class="btn btn-ghost btn-sm" id="trace-discuss" style="margin-top:16px;align-self:flex-start;">Discuss this field in chat →</button>
+</aside>
+
+<!-- ============ FILE PREVIEW MODAL ============ -->
+<div class="scrim" id="file-scrim"></div>
+<div class="file-preview-modal" id="file-preview-modal" aria-hidden="true">
+  <div class="file-preview-header">
+    <div>
+      <div class="file-preview-type" id="file-preview-type">Screenshot</div>
+      <div class="file-preview-name" id="file-preview-name">filename.png</div>
+    </div>
+    <button class="file-preview-close" id="file-preview-close" aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="file-preview-body" id="file-preview-body"></div>
+</div>
+
+<div class="toast" id="toast">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-text">Pushed to ADO</span>
+</div>
+
+<!-- ============ CHAT ============ -->
+<button class="chat-fab" id="chat-fab" aria-label="Chat with Wherefore">
+  <span class="dot"></span>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+</button>
+
+<div class="chat-panel" id="chat-panel" aria-hidden="true">
+  <div class="chat-header">
+    <div>
+      <div class="chat-title">Wherefore</div>
+      <div class="chat-context" id="chat-context">Dashboard</div>
+    </div>
+    <button class="chat-close" id="chat-close" aria-label="Close chat">×</button>
+  </div>
+  <div class="chat-thread" id="chat-thread"></div>
+  <div class="chat-note-row" id="chat-note-row" style="display:none;">
+    <button class="btn-note" id="btn-add-note">+ Add my last message as a consultant note on the draft</button>
+  </div>
+  <form class="chat-input-row" id="chat-form">
+    <textarea id="chat-input" rows="1" placeholder="Ask why something was drafted, or tell me what the transcript missed…"></textarea>
+    <button type="submit" class="chat-send" id="chat-send" aria-label="Send">↑</button>
+  </form>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Data ----------
+  var TYPE_MAP = {
+    text:       { d365:'Single Line Text', salesforce:'Text' },
+    phone:      { d365:'Phone',            salesforce:'Phone' },
+    email:      { d365:'Email',            salesforce:'Email' },
+    number:     { d365:'Whole Number',     salesforce:'Number' },
+    date:       { d365:'Date Only',        salesforce:'Date' },
+    boolean:    { d365:'Two Options',      salesforce:'Checkbox' },
+    lookup:     { d365:'Lookup',           salesforce:'Lookup Relationship' },
+    choice:     { d365:'Choice',           salesforce:'Picklist' },
+    lookup_user:{ d365:'Lookup → User',    salesforce:'Lookup Relationship (User)' }
+  };
+  var TYPE_HEADER = { d365:'Dataverse Type', salesforce:'Salesforce Type' };
+
+  var REVIEW_REASON_LABEL = {
+    ambiguous_entity: 'Entity unclear',
+    ambiguous_form: 'Form unclear',
+    low_confidence: 'Needs confirmation',
+    missing_lookup_target: 'Lookup target missing',
+    missing_supporting_field: 'Needs a supporting field',
+    missing_choice_values: 'Choice values missing',
+    missing_acceptance_criteria: 'Acceptance criteria missing'
+  };
+
+  // Illustrative data for the canonical Acme demo project only. Real
+  // projects load FIELDS/STORIES from the backend (loadRealReview) instead.
+  var MOCK_FIELDS = [
+    { name:'Caller Name', type:'text', required:true, entity:'Contact', section:'Caller Details', isPrimary:true, sourceType:'screenshot', sourceLabel:'Screenshot · Intake Form A', status:'ok',
+      quote:'Detected in the uploaded screenshot — top-left of the intake form, labeled "Caller Name."',
+      why:'A plain text capture field. No constraints were mentioned in the transcript, so this stayed a simple text type. This is the Contact entity\'s primary field.' },
+    { name:'Phone', type:'phone', required:true, entity:'Contact', section:'Caller Details', sourceType:'screenshot', sourceLabel:'Screenshot · Intake Form B', status:'ok',
+      quote:'Detected in the uploaded screenshot — second column of the intake form, labeled "Phone."',
+      why:'Formatted as a phone field rather than plain text, matching the column\'s input mask in the screenshot.' },
+    { name:'Date of Birth', type:'text', required:false, entity:'Contact', section:'Caller Details', sourceType:'screenshot', sourceLabel:'Screenshot · Caller Detail Sheet', status:'review', reviewReason:'ambiguous_form',
+      quote:'Detected in a separate screenshot — a "Caller Detail Sheet" tab, distinct from "Intake Form A" where Caller Name and Phone were found. Not clear if this is the same underlying form or a different one.',
+      why:'Flagged for review: this field came from a differently-named form than the rest of the Contact fields. Before finalizing, confirm with the client whether "Caller Detail Sheet" and "Intake Form A" are the same screen, and if this should sit under its own section.' },
+    { name:'Call Reason', type:'lookup', required:true, entity:'Case', section:'Case Details', lookupTarget:'Call Reason', sourceType:'transcript', sourceLabel:'Transcript · 04:12', status:'ok',
+      quote:'"…call reason categories — we actually add new ones every quarter, so don\u2019t hardcode a fixed list…"',
+      why:'This is why Call Reason is drafted as a Lookup, not a static Choice — traceable back to this exact line. Points to a new Call Reason entity so categories can be added without a deployment.' },
+    { name:'Status', type:'choice', required:true, entity:'Case', section:'Case Details', choiceValues:['New','Assigned','In Progress','Closed','Escalated'], sourceType:'screenshot', sourceLabel:'Screenshot · Intake Form G', status:'review', reviewReason:'low_confidence',
+      quote:'Detected in the uploaded screenshot — column G, five repeating values (New, Assigned, In Progress, Closed, Escalated).',
+      why:'Flagged for review: a 5th value ("Escalated") appeared in only one row of the sample data — worth confirming with the client before finalizing.' },
+    { name:'Assigned To', type:'lookup_user', required:true, entity:'Case', section:'Case Details', lookupTarget:'User', sourceType:'screenshot', sourceLabel:'Screenshot · Intake Form F', status:'ok',
+      quote:'Detected in the uploaded screenshot — column F, values matching staff names from the roster tab.',
+      why:'Drafted as a Lookup to the User table since every sample value matched a named staff member.' },
+    { name:'Name', type:'text', required:true, entity:'Call Reason', section:'Call Reason Details', isPrimary:true, sourceType:'transcript', sourceLabel:'Transcript · 04:12', status:'ok',
+      quote:'Synthesized to support the Call Reason lookup above.',
+      why:'Every lookup needs a target entity that actually appears in the Field Listing, not just an implied one — this is that entity\'s primary field.' },
+    { name:'Name', type:'text', required:true, entity:'User', section:'User Details', isPrimary:true, sourceType:'screenshot', sourceLabel:'Screenshot · Intake Form F', status:'ok',
+      quote:'Synthesized to support the Assigned To lookup above.',
+      why:'Every lookup needs a target entity that actually appears in the Field Listing — this is the User entity\'s primary field.' }
+  ];
+
+  var MOCK_STORIES = [
+    { epic:'Call Center Intake Case Management', feature:'Case Creation & Assignment',
+      story:'As an Agent, I want to log a new call so a case record is created.',
+      acceptanceCriteria:[
+        'Given an Agent on an active call, When they save a new Case with Caller Name, Phone, and Call Reason populated, Then the Case record should be created with Status set to New.',
+        'Given a new Case with Priority set to Urgent/Safety, When the Case is saved, Then the Case\'s Assigned To field should be populated within 15 minutes of creation.',
+        'Given a new Case with Priority set to Routine, When the Case is saved, Then the Case should be placed in the general queue without requiring immediate assignment.'
+      ],
+      sourceLabel:'Transcript · 05:40', status:'ok' }
+  ];
+
+  var MOCK_RBP = [
+    { role:'Agent', entity:'Case', canCreate:true, canRead:true, readScope:'own cases only', canUpdate:true, canDelete:false, canReassign:false, status:'ok' },
+    { role:'Supervisor', entity:'Case', canCreate:true, canRead:true, readScope:'all cases', canUpdate:true, canDelete:true, canReassign:true, status:'ok' }
+  ];
+
+  var MOCK_PROCESS_FLOW = {
+    steps: [
+      { stepKey:'start_1', label:'Call comes in', actor:'Agent', stepType:'start', status:'ok', sourceLabel:'Transcript · 00:42' },
+      { stepKey:'step_2', label:'Log Caller Name, Phone, Call Reason', actor:'Agent', stepType:'task', status:'ok', sourceLabel:'Transcript · 00:42' },
+      { stepKey:'step_3', label:'Urgent or safety issue?', actor:'Agent', stepType:'decision', status:'ok', sourceLabel:'Transcript · 05:40' },
+      { stepKey:'step_4', label:'Assign within 15 minutes', actor:'Supervisor', stepType:'task', status:'ok', sourceLabel:'Transcript · 05:40' },
+      { stepKey:'step_5', label:'Standard queue assignment', actor:'Agent', stepType:'task', status:'ok', sourceLabel:'Transcript · 05:40' },
+      { stepKey:'step_6', label:'Agent works the case', actor:'Agent', stepType:'task', status:'ok', sourceLabel:'Transcript · 06:20' },
+      { stepKey:'end_1', label:'Case closed', actor:'Agent', stepType:'end', status:'ok', sourceLabel:'Transcript · 06:20' }
+    ],
+    transitions: [
+      { fromStep:'start_1', toStep:'step_2', condition:null },
+      { fromStep:'step_2', toStep:'step_3', condition:null },
+      { fromStep:'step_3', toStep:'step_4', condition:'Urgent or safety flag set' },
+      { fromStep:'step_3', toStep:'step_5', condition:'Not urgent' },
+      { fromStep:'step_4', toStep:'step_6', condition:null },
+      { fromStep:'step_5', toStep:'step_6', condition:null },
+      { fromStep:'step_6', toStep:'end_1', condition:null }
+    ]
+  };
+
+  var FIELDS = MOCK_FIELDS;
+  var STORIES = MOCK_STORIES;
+  var RBP = MOCK_RBP;
+  var PROCESS_FLOW = MOCK_PROCESS_FLOW;
+
+  var API_BASE = '';
+  var CANONICAL_PROJECT_NAME = 'Acme Field Ops Case Management';
+  var STATUS_META = {
+    draft:{ label:'Draft', cls:'draft' },
+    in_review:{ label:'In Review', cls:'review' },
+    pushed:{ label:'Pushed', cls:'pushed' }
+  };
+  var PLATFORM_LABEL = { d365:'Dynamics 365', salesforce:'Salesforce' };
+
+  var state = { platform:'d365', view:'dashboard', processed:false, currentProjectId:null };
+
+  // ---------- View switching ----------
+  var CRUMB_LABEL = {
+    dashboard:'Dashboard', 'new-project':'New Project', 'project-detail':'Upload Discovery Material',
+    processing:'Processing', review:'Draft Review', traceability:'Traceability', settings:'Settings'
+  };
+
+  function showView(name){
+    document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+    var el = document.getElementById('view-' + name);
+    if(el) el.classList.add('active');
+    document.querySelectorAll('.nav-item[data-nav]').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-nav') === name);
+    });
+    document.getElementById('crumbs').innerHTML = 'Wherefore / <b>' + (CRUMB_LABEL[name] || 'Dashboard') + '</b>';
+    state.view = name;
+    document.getElementById('canvas').scrollTop = 0;
+    updateChatContextLabel();
+    if(name === 'dashboard') loadProjects();
+    if(name === 'settings') loadClaudeCliStatus();
+  }
+
+  // ---------- Settings: Claude Code CLI sign-in ----------
+  function loadClaudeCliStatus(){
+    fetch(API_BASE + '/api/settings/claude-cli/status')
+      .then(function(res){ return res.json(); })
+      .then(renderClaudeCliStatus)
+      .catch(function(){ document.getElementById('settings-cli-status').textContent = 'Unavailable'; });
+  }
+
+  function renderClaudeCliStatus(status){
+    var el = document.getElementById('settings-cli-status');
+    if(status.loggedIn){
+      el.textContent = 'Signed in as ' + status.email + (status.subscriptionType ? ' (' + status.subscriptionType + ')' : '');
+    } else {
+      el.textContent = 'Not signed in';
+    }
+  }
+
+  document.getElementById('btn-claude-cli-signin').addEventListener('click', function(){
+    var btn = this;
+    var log = document.getElementById('settings-cli-log');
+    log.style.display = 'block';
+    log.textContent = 'Starting sign-in — a browser window should open for you to complete it…\n';
+    btn.disabled = true;
+
+    fetch(API_BASE + '/api/settings/claude-cli/login', { method:'POST' })
+      .then(function(){
+        var source = new EventSource(API_BASE + '/api/settings/claude-cli/login/stream');
+        source.onmessage = function(e){
+          var msg = JSON.parse(e.data);
+          if(msg.type === 'line'){
+            log.textContent += msg.text + '\n';
+            log.scrollTop = log.scrollHeight;
+          } else if(msg.type === 'done'){
+            source.close();
+            btn.disabled = false;
+            log.textContent += msg.success ? '\nSigned in successfully.' : '\nSign-in did not complete.';
+            loadClaudeCliStatus();
+          }
+        };
+        source.onerror = function(){
+          source.close();
+          btn.disabled = false;
+          log.textContent += '\nLost connection to the sign-in stream.';
+        };
+      })
+      .catch(function(){
+        btn.disabled = false;
+        showToast("Couldn't start sign-in — is the backend running?");
+      });
+  });
+
+  document.querySelectorAll('[data-nav]').forEach(function(el){
+    el.addEventListener('click', function(){
+      showView(el.getAttribute('data-nav'));
+    });
+  });
+
+  // ---------- Dashboard: real projects from the backend ----------
+  function loadProjects(){
+    fetch(API_BASE + '/api/projects')
+      .then(function(res){ if(!res.ok) throw new Error('failed to load projects'); return res.json(); })
+      .then(renderProjectGrid)
+      .catch(function(){ showToast("Couldn't load projects — is the backend running?"); });
+  }
+
+  function renderProjectGrid(projects){
+    var grid = document.getElementById('project-grid');
+    grid.innerHTML = '';
+    projects.forEach(function(p){
+      var meta = STATUS_META[p.status] || STATUS_META.draft;
+      var updated = new Date(p.updated_at).toLocaleString();
+      var card = document.createElement('button');
+      card.className = 'project-card clickable';
+      card.innerHTML =
+        '<span class="status-pill ' + meta.cls + '">' + meta.label + '</span>' +
+        '<h3></h3>' +
+        '<div class="meta"></div>';
+      card.querySelector('h3').textContent = p.name;
+      card.querySelector('.meta').textContent = (PLATFORM_LABEL[p.target_platform] || p.target_platform) + ' · Updated ' + updated;
+      card.addEventListener('click', function(){ openProject(p); });
+      grid.appendChild(card);
+    });
+    var newCard = document.createElement('button');
+    newCard.className = 'new-project-card';
+    newCard.setAttribute('data-nav', 'new-project');
+    newCard.innerHTML =
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Project';
+    newCard.addEventListener('click', function(){ showView('new-project'); });
+    grid.appendChild(newCard);
+  }
+
+  function openProject(project){
+    if(project.name === CANONICAL_PROJECT_NAME){
+      // The canonical fixture — kept as the original illustrative demo.
+      FIELDS = MOCK_FIELDS;
+      STORIES = MOCK_STORIES;
+      RBP = MOCK_RBP;
+      PROCESS_FLOW = MOCK_PROCESS_FLOW;
+      state.platform = 'd365';
+      document.getElementById('review-title').textContent = project.name;
+      document.getElementById('review-sub').textContent = 'Draft review — click any Source to see exactly where it came from.';
+      document.getElementById('btn-add-followup').style.display = 'none';
+      syncPlatformToggle();
+      renderFieldTable();
+      renderStoryTree();
+      renderRbpMatrix();
+      renderProcessFlow();
+      showView('review');
+      return;
+    }
+    state.currentProjectId = project.id;
+    if(project.has_draft){
+      loadRealReview(project.id);
+    } else {
+      loadProjectDetail(project.id);
+    }
+  }
+
+  // ---------- New Project → create, then attach files ----------
+  document.getElementById('btn-create-project').addEventListener('click', function(){
+    var name = document.getElementById('proj-name').value.trim();
+    var platform = document.getElementById('proj-platform').value;
+    if(!name){ showToast('Give the project a name first'); return; }
+    fetch(API_BASE + '/api/projects', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ name:name, target_platform:platform })
+    })
+      .then(function(res){ if(!res.ok) throw new Error('create failed'); return res.json(); })
+      .then(function(project){
+        state.currentProjectId = project.id;
+        loadProjectDetail(project.id);
+      })
+      .catch(function(){ showToast("Couldn't create the project — is the backend running?"); });
+  });
+
+  // ---------- Project detail: real uploads ----------
+  function loadProjectDetail(projectId){
+    fetch(API_BASE + '/api/projects/' + projectId)
+      .then(function(res){ if(!res.ok) throw new Error('failed to load project'); return res.json(); })
+      .then(function(project){
+        state.currentProjectId = project.id;
+        document.getElementById('pd-title').textContent = project.name;
+        document.getElementById('pd-sub').textContent =
+          (PLATFORM_LABEL[project.target_platform] || project.target_platform) +
+          (project.has_draft
+            ? ' · attach material from a follow-up meeting, then update the draft.'
+            : ' · attach discovery material below.');
+        document.getElementById('btn-generate-draft').textContent = project.has_draft
+          ? 'Update Draft with New Material →'
+          : 'Generate Draft & Review Stories/Fields →';
+        renderUploadedFiles(project.uploaded_files || []);
+        showView('project-detail');
+      })
+      .catch(function(){ showToast("Couldn't load the project — is the backend running?"); });
+  }
+
+  var UPLOAD_TYPE_LABEL = {
+    transcript:'Transcript', screenshot:'Screenshot', video_recording:'Recording',
+    'screenshot+transcript':'Screenshot + Transcript'
+  };
+
+  // ---------- Real Review screen: load a generated draft from the backend ----------
+  function loadRealReview(projectId){
+    Promise.all([
+      fetch(API_BASE + '/api/projects/' + projectId).then(function(r){ return r.json(); }),
+      fetch(API_BASE + '/api/projects/' + projectId + '/draft').then(function(r){ return r.json(); })
+    ]).then(function(results){
+      var project = results[0];
+      var draft = results[1];
+      state.currentProjectId = projectId;
+      state.platform = project.target_platform;
+      FIELDS = draft.fields.map(mapRealFieldToInternal);
+      STORIES = draft.stories.map(mapRealStoryToInternal);
+      RBP = (draft.rbp || []).map(mapRealRbpToInternal);
+      PROCESS_FLOW = mapRealProcessFlowToInternal(draft.process_flow || {steps: [], transitions: []});
+      document.getElementById('review-title').textContent = project.name;
+      document.getElementById('review-sub').textContent = 'Draft review — click any Source to see exactly where it came from.';
+      var followupBtn = document.getElementById('btn-add-followup');
+      followupBtn.style.display = 'inline-flex';
+      followupBtn.onclick = function(){ loadProjectDetail(projectId); };
+      syncPlatformToggle();
+      renderFieldTable();
+      renderStoryTree();
+      renderRbpMatrix();
+      renderProcessFlow();
+      showView('review');
+    }).catch(function(){ showToast("Couldn't load the draft — is the backend running?"); });
+  }
+
+  function mapRealFieldToInternal(f){
+    var sourceLabel = (UPLOAD_TYPE_LABEL[f.source_type] || f.source_type) + (f.source_filename ? ' · ' + f.source_filename : '');
+    return {
+      name: f.name,
+      type: f.field_type,
+      required: f.required,
+      entity: f.entity,
+      section: f.section,
+      lookupTarget: f.lookup_target_entity,
+      choiceValues: f.choice_values,
+      isPrimary: f.is_primary_field,
+      sourceType: f.source_type,
+      sourceLabel: sourceLabel,
+      status: f.status === 'approved' ? 'ok' : 'review',
+      reviewReason: f.review_reason,
+      quote: (f.source_filename ? 'Cited from ' + f.source_filename : 'Cited') + (f.source_detail ? ' — ' + f.source_detail : ''),
+      why: f.rationale || '—'
+    };
+  }
+
+  function mapRealStoryToInternal(s){
+    var sourceLabel = 'Transcript' + (s.source_filename ? ' · ' + s.source_filename : '') + (s.source_detail ? ' · ' + s.source_detail : '');
+    return {
+      epic: s.epic,
+      feature: s.feature,
+      story: s.story,
+      acceptanceCriteria: s.acceptance_criteria,
+      sourceLabel: sourceLabel,
+      status: s.status === 'approved' ? 'ok' : 'review',
+      reviewReason: s.review_reason
+    };
+  }
+
+  function mapRealRbpToInternal(r){
+    return {
+      role: r.role,
+      entity: r.entity,
+      canCreate: r.can_create,
+      canRead: r.can_read,
+      readScope: r.read_scope,
+      canUpdate: r.can_update,
+      canDelete: r.can_delete,
+      canReassign: r.can_reassign,
+      status: r.status === 'approved' ? 'ok' : 'review',
+      reviewReason: r.review_reason
+    };
+  }
+
+  function mapRealProcessFlowToInternal(flow){
+    return {
+      steps: (flow.steps || []).map(function(s){
+        return {
+          stepKey: s.step_key,
+          label: s.label,
+          actor: s.actor,
+          stepType: s.step_type,
+          status: s.status === 'approved' ? 'ok' : 'review',
+          reviewReason: s.review_reason,
+          sourceLabel: 'Transcript' + (s.source_filename ? ' · ' + s.source_filename : '') + (s.source_detail ? ' · ' + s.source_detail : '')
+        };
+      }),
+      transitions: (flow.transitions || []).map(function(t){
+        return { fromStep: t.from_step, toStep: t.to_step, condition: t.condition };
+      })
+    };
+  }
+
+  function renderStoryTree(){
+    var container = document.getElementById('story-tree-container');
+    container.innerHTML = '';
+    if(STORIES.length === 0){
+      container.innerHTML = '<p class="empty-hint" style="margin:0;">No stories generated yet.</p>';
+      return;
+    }
+    var epicOrder = [];
+    var epicGroups = {};
+    STORIES.forEach(function(s){
+      if(!epicGroups[s.epic]){ epicGroups[s.epic] = { _features:[] }; epicOrder.push(s.epic); }
+      if(!epicGroups[s.epic][s.feature]){ epicGroups[s.epic][s.feature] = []; epicGroups[s.epic]._features.push(s.feature); }
+      epicGroups[s.epic][s.feature].push(s);
+    });
+
+    epicOrder.forEach(function(epicName){
+      var epicDiv = document.createElement('div');
+      epicDiv.className = 'story-group';
+      var epicHeader = document.createElement('div');
+      epicHeader.className = 'story-epic';
+      epicHeader.textContent = 'Epic — ' + epicName;
+      epicDiv.appendChild(epicHeader);
+
+      epicGroups[epicName]._features.forEach(function(featureName){
+        var featureHeader = document.createElement('div');
+        featureHeader.className = 'story-feature';
+        featureHeader.textContent = 'Feature — ' + featureName;
+        epicDiv.appendChild(featureHeader);
+
+        epicGroups[epicName][featureName].forEach(function(s){
+          var card = document.createElement('div');
+          card.className = 'story-card';
+          var reasonTag = (s.status === 'review' && REVIEW_REASON_LABEL[s.reviewReason])
+            ? '<span class="review-reason-tag">' + REVIEW_REASON_LABEL[s.reviewReason] + '</span>' : '';
+          card.innerHTML =
+            '<p></p><div class="ac-label">Acceptance criteria</div><ul class="ac-list"></ul><div class="story-source"></div>' + reasonTag;
+          card.querySelector('p').textContent = '"' + s.story + '"';
+          var acList = card.querySelector('.ac-list');
+          var criteria = Array.isArray(s.acceptanceCriteria) ? s.acceptanceCriteria : (s.acceptanceCriteria ? [s.acceptanceCriteria] : []);
+          if(criteria.length === 0){
+            var li = document.createElement('li');
+            li.textContent = '—';
+            acList.appendChild(li);
+          } else {
+            criteria.forEach(function(ac){
+              var li = document.createElement('li');
+              li.textContent = ac;
+              acList.appendChild(li);
+            });
+          }
+          card.querySelector('.story-source').textContent = 'Source: ' + s.sourceLabel;
+          epicDiv.appendChild(card);
+        });
+      });
+
+      container.appendChild(epicDiv);
+    });
+  }
+
+  function renderRbpMatrix(){
+    var tbody = document.getElementById('rbp-tbody');
+    tbody.innerHTML = '';
+    if(RBP.length === 0){
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-hint" style="text-align:left;">No RBP entries generated yet.</td></tr>';
+      return;
+    }
+    function cell(granted, note){
+      if(!granted) return '<td class="rbp-no">—</td>';
+      return '<td class="rbp-yes">✓' + (note ? '<span class="rbp-note">' + note + '</span>' : '') + '</td>';
+    }
+    RBP.forEach(function(r){
+      var tr = document.createElement('tr');
+      var reasonTag = (r.status === 'review' && REVIEW_REASON_LABEL[r.reviewReason])
+        ? '<span class="review-reason-tag">' + REVIEW_REASON_LABEL[r.reviewReason] + '</span>' : '';
+      tr.innerHTML =
+        '<td class="rbp-role-cell"></td>' +
+        '<td></td>' +
+        cell(r.canCreate) +
+        cell(r.canRead, r.readScope) +
+        cell(r.canUpdate) +
+        cell(r.canDelete) +
+        cell(r.canReassign);
+      tr.querySelector('.rbp-role-cell').textContent = r.role;
+      if(reasonTag){ tr.querySelector('.rbp-role-cell').innerHTML += reasonTag; }
+      tr.children[1].textContent = r.entity;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ---------- Process Flow: rendered via Mermaid ----------
+  function buildMermaidDefinition(flow){
+    var lines = ['flowchart TD'];
+    var styleLines = [];
+    var idFor = function(key){ return 'n_' + String(key).replace(/[^a-zA-Z0-9_]/g, '_'); };
+    (flow.steps || []).forEach(function(s){
+      var id = idFor(s.stepKey);
+      var text = ((s.actor ? s.actor + ': ' : '') + s.label).replace(/"/g, "'");
+      var open, close;
+      if(s.stepType === 'start' || s.stepType === 'end'){ open = '(['; close = '])'; }
+      else if(s.stepType === 'decision'){ open = '{'; close = '}'; }
+      else { open = '['; close = ']'; }
+      lines.push('  ' + id + open + '"' + text + '"' + close);
+      if(s.status === 'review'){
+        styleLines.push('  style ' + id + ' fill:#FFFBF0,stroke:#C97F0E,stroke-width:2px');
+      }
+    });
+    (flow.transitions || []).forEach(function(t){
+      var fromId = idFor(t.fromStep);
+      var toId = idFor(t.toStep);
+      if(t.condition){
+        lines.push('  ' + fromId + ' -->|' + String(t.condition).replace(/\|/g, '/').replace(/"/g, "'") + '| ' + toId);
+      } else {
+        lines.push('  ' + fromId + ' --> ' + toId);
+      }
+    });
+    return lines.concat(styleLines).join('\n');
+  }
+
+  var mermaidInitialized = false;
+  function ensureMermaidInit(){
+    if(mermaidInitialized || typeof mermaid === 'undefined') return;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'loose',
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#CADCFC',
+        primaryBorderColor: '#1E2761',
+        primaryTextColor: '#1E2233',
+        lineColor: '#1E2761',
+        fontFamily: 'Inter, sans-serif'
+      }
+    });
+    mermaidInitialized = true;
+  }
+
+  function renderProcessFlow(){
+    var container = document.getElementById('process-flow-diagram');
+    var notes = document.getElementById('process-flow-notes');
+    notes.innerHTML = '';
+    if(!PROCESS_FLOW || !PROCESS_FLOW.steps || PROCESS_FLOW.steps.length === 0){
+      container.innerHTML = '<p class="empty-hint" style="margin:0;">No process flow generated yet.</p>';
+      return;
+    }
+    ensureMermaidInit();
+    if(typeof mermaid === 'undefined'){
+      container.innerHTML = '<p class="empty-hint" style="margin:0;">Diagram renderer unavailable — check your internet connection.</p>';
+      return;
+    }
+    var definition = buildMermaidDefinition(PROCESS_FLOW);
+    var renderId = 'mermaid-graph-' + Date.now();
+    container.innerHTML = '';
+    mermaid.render(renderId, definition).then(function(result){
+      container.innerHTML = result.svg;
+    }).catch(function(err){
+      container.innerHTML = '<p class="empty-hint" style="margin:0;">Could not render the process flow diagram.</p>';
+      if(window.console) console.error(err);
+    });
+
+    var flagged = PROCESS_FLOW.steps.filter(function(s){ return s.status === 'review'; });
+    if(flagged.length){
+      notes.innerHTML = flagged.map(function(s){
+        return '<div class="flow-review-note"><b>' + s.label + '</b> — ' + (REVIEW_REASON_LABEL[s.reviewReason] || 'Needs review') + '</div>';
+      }).join('');
+    }
+  }
+
+  // ---------- Generate Draft: real extraction pipeline with live progress ----------
+  function resetProcList(){
+    document.querySelectorAll('#proc-list .proc-item').forEach(function(it){
+      it.classList.remove('active', 'done');
+    });
+    document.getElementById('proc-cta').classList.remove('show');
+  }
+
+  function markProcStep(step, status){
+    var item = document.querySelector('#proc-list .proc-item[data-step="' + step + '"]');
+    if(!item) return;
+    if(status === 'active'){ item.classList.add('active'); item.classList.remove('done'); }
+    else if(status === 'done'){ item.classList.remove('active'); item.classList.add('done'); }
+  }
+
+  document.getElementById('btn-generate-draft').addEventListener('click', function(){
+    var projectId = state.currentProjectId;
+    if(!projectId) return;
+    resetProcList();
+    showView('processing');
+
+    fetch(API_BASE + '/api/projects/' + projectId + '/generate-draft', { method:'POST' })
+      .then(function(res){ if(!res.ok) throw new Error('failed to start'); return res.json(); })
+      .then(function(){
+        var source = new EventSource(API_BASE + '/api/projects/' + projectId + '/generate-draft/stream');
+        source.onmessage = function(e){
+          var msg = JSON.parse(e.data);
+          if(msg.type === 'step'){
+            markProcStep(msg.step, msg.status);
+          } else if(msg.type === 'done'){
+            source.close();
+            if(msg.success){
+              if(msg.message) showToast(msg.message);
+              loadRealReview(projectId);
+            } else {
+              showToast(msg.error || "Draft generation failed");
+              loadProjectDetail(projectId);
+            }
+          }
+        };
+        source.onerror = function(){
+          source.close();
+          showToast("Lost connection while generating the draft");
+          document.getElementById('proc-cta').classList.add('show');
+        };
+      })
+      .catch(function(){
+        showToast("Couldn't start draft generation — is the backend running?");
+        loadProjectDetail(projectId);
+      });
+  });
+
+  document.getElementById('btn-view-generated-draft').addEventListener('click', function(){
+    if(state.currentProjectId) loadRealReview(state.currentProjectId);
+  });
+
+  function renderUploadedFiles(files){
+    var list = document.getElementById('pd-file-list');
+    var emptyHint = document.getElementById('pd-empty-hint');
+    list.innerHTML = '';
+    if(files.length === 0){
+      emptyHint.style.display = 'block';
+      return;
+    }
+    emptyHint.style.display = 'none';
+    files.forEach(function(f){
+      var li = document.createElement('li');
+      var btn = document.createElement('button');
+      btn.className = 'uploaded-file-row';
+      var processedTag = f.processed_at
+        ? '<span class="uf-processed">Processed</span>'
+        : '<span class="uf-processed uf-new">New</span>';
+      btn.innerHTML = '<span class="uf-type"></span><span class="uf-name"></span>' + processedTag;
+      btn.querySelector('.uf-type').textContent = UPLOAD_TYPE_LABEL[f.type] || f.type;
+      btn.querySelector('.uf-name').textContent = f.filename;
+      btn.addEventListener('click', function(){ openFilePreview(f); });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+  }
+
+  // ---------- File preview modal ----------
+  var fileScrim = document.getElementById('file-scrim');
+  var filePreviewModal = document.getElementById('file-preview-modal');
+
+  function openFilePreview(file){
+    document.getElementById('file-preview-type').textContent = UPLOAD_TYPE_LABEL[file.type] || file.type;
+    document.getElementById('file-preview-name').textContent = file.filename;
+    var body = document.getElementById('file-preview-body');
+    body.innerHTML = '';
+    var contentUrl = API_BASE + '/api/projects/' + file.project_id + '/uploads/' + file.id + '/content';
+
+    if(file.type === 'screenshot'){
+      var img = document.createElement('img');
+      img.src = contentUrl;
+      img.alt = file.filename;
+      body.appendChild(img);
+    } else if(file.type === 'video_recording'){
+      var video = document.createElement('video');
+      video.src = contentUrl;
+      video.controls = true;
+      video.style.width = '100%';
+      video.style.borderRadius = '8px';
+      body.appendChild(video);
+    } else {
+      var pre = document.createElement('pre');
+      pre.textContent = 'Loading…';
+      body.appendChild(pre);
+      fetch(contentUrl)
+        .then(function(res){ if(!res.ok) throw new Error('failed to load'); return res.text(); })
+        .then(function(text){ pre.textContent = text; })
+        .catch(function(){ pre.textContent = "Couldn't load this file's content."; });
+    }
+
+    fileScrim.classList.add('show');
+    filePreviewModal.classList.add('show');
+    filePreviewModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeFilePreview(){
+    fileScrim.classList.remove('show');
+    filePreviewModal.classList.remove('show');
+    filePreviewModal.setAttribute('aria-hidden', 'true');
+  }
+  document.getElementById('file-preview-close').addEventListener('click', closeFilePreview);
+  fileScrim.addEventListener('click', closeFilePreview);
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeFilePreview(); });
+
+  function uploadFile(projectId, type, file){
+    var formData = new FormData();
+    formData.append('type', type);
+    formData.append('file', file);
+    return fetch(API_BASE + '/api/projects/' + projectId + '/uploads', {
+      method:'POST',
+      body: formData
+    }).then(function(res){ if(!res.ok) throw new Error('upload failed'); return res.json(); });
+  }
+
+  document.getElementById('pd-transcript-input').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file || !state.currentProjectId) return;
+    uploadFile(state.currentProjectId, 'transcript', file)
+      .then(function(){ loadProjectDetail(state.currentProjectId); })
+      .catch(function(){ showToast("Couldn't upload the transcript"); });
+    e.target.value = '';
+  });
+
+  document.getElementById('pd-screenshot-input').addEventListener('change', function(e){
+    var files = Array.prototype.slice.call(e.target.files);
+    if(files.length === 0 || !state.currentProjectId) return;
+    var projectId = state.currentProjectId;
+    var chain = Promise.resolve();
+    files.forEach(function(file){
+      chain = chain.then(function(){ return uploadFile(projectId, 'screenshot', file); });
+    });
+    chain
+      .then(function(){ loadProjectDetail(projectId); })
+      .catch(function(){ showToast("Couldn't upload one or more screenshots"); });
+    e.target.value = '';
+  });
+
+  document.getElementById('pd-recording-input').addEventListener('change', function(e){
+    var files = Array.prototype.slice.call(e.target.files);
+    if(files.length === 0 || !state.currentProjectId) return;
+    var projectId = state.currentProjectId;
+    var chain = Promise.resolve();
+    files.forEach(function(file){
+      chain = chain.then(function(){ return uploadFile(projectId, 'video_recording', file); });
+    });
+    chain
+      .then(function(){ loadProjectDetail(projectId); })
+      .catch(function(){ showToast("Couldn't upload one or more recordings"); });
+    e.target.value = '';
+  });
+
+  function runProcessing(){
+    var items = document.querySelectorAll('#proc-list .proc-item');
+    items.forEach(function(it){ it.classList.remove('active','done'); });
+    document.getElementById('proc-cta').classList.remove('show');
+    var i = 0;
+    function step(){
+      if(i > 0) items[i-1].classList.remove('active');
+      if(i > 0) items[i-1].classList.add('done');
+      if(i < items.length){
+        items[i].classList.add('active');
+        i++;
+        setTimeout(step, 620);
+      } else {
+        document.getElementById('proc-cta').classList.add('show');
+      }
+    }
+    step();
+  }
+
+  // ---------- Field type rendering (platform-aware) ----------
+  function renderFieldTable(){
+    document.getElementById('type-col-header').textContent = TYPE_HEADER[state.platform];
+    var tbody = document.getElementById('field-tbody');
+    tbody.innerHTML = '';
+
+    // Grouped by entity so a consultant can see where each field belongs,
+    // not just what it is — otherwise fields from separately-stored forms
+    // (e.g. caller details vs. the case record) end up in one flat list.
+    var entityOrder = [];
+    FIELDS.forEach(function(f){
+      if(entityOrder.indexOf(f.entity) === -1) entityOrder.push(f.entity);
+    });
+
+    entityOrder.forEach(function(entityName){
+      var headerRow = document.createElement('tr');
+      headerRow.className = 'field-entity-row';
+      headerRow.innerHTML = '<td colspan="6">Entity — ' + entityName + '</td>';
+      tbody.appendChild(headerRow);
+
+      FIELDS.forEach(function(f, idx){
+        if(f.entity !== entityName) return;
+        var tr = document.createElement('tr');
+        tr.id = 'field-row-' + idx;
+        if(f.status === 'review') tr.classList.add('needs-review');
+        var statusIcon = f.status === 'ok'
+          ? '<span class="status-icon ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>'
+          : '<span class="status-icon review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4h2v9h-2z"/><circle cx="12" cy="17" r="1"/></svg></span>';
+        var reasonTag = (f.status === 'review' && REVIEW_REASON_LABEL[f.reviewReason])
+          ? '<span class="review-reason-tag">' + REVIEW_REASON_LABEL[f.reviewReason] + '</span>' : '';
+        var typeLabel = TYPE_MAP[f.type][state.platform] +
+          (f.type === 'lookup' && f.lookupTarget ? ' → ' + f.lookupTarget : '');
+        var nameCell = '<div>' + f.name + '</div>';
+        if(f.isPrimary){ nameCell += '<span class="field-primary-tag">★ Primary field</span>'; }
+        if(f.type === 'choice' && f.choiceValues && f.choiceValues.length){
+          nameCell += '<div class="field-choice-values">' + f.choiceValues.join(', ') + '</div>';
+        }
+        tr.innerHTML =
+          '<td>' + nameCell + '</td>' +
+          '<td>' + (f.section || '—') + '</td>' +
+          '<td class="field-type">' + typeLabel + '</td>' +
+          '<td>' + (f.required ? 'Yes' : 'No') + '</td>' +
+          '<td><button class="source-link" data-field="' + idx + '">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>' +
+            f.sourceLabel + '</button></td>' +
+          '<td>' + statusIcon + reasonTag + '</td>';
+        tbody.appendChild(tr);
+      });
+    });
+
+    tbody.querySelectorAll('.source-link').forEach(function(btn){
+      btn.addEventListener('click', function(){ openTrace(parseInt(btn.getAttribute('data-field'), 10)); });
+    });
+    updateReviewSummary();
+  }
+
+  function updateReviewSummary(){
+    var el = document.querySelector('.review-summary');
+    if(!el) return;
+    var total = FIELDS.length;
+    var approved = FIELDS.filter(function(f){ return f.status === 'ok'; }).length;
+    var review = total - approved;
+    el.textContent = total + ' field' + (total === 1 ? '' : 's') + ' drafted · ' +
+      approved + ' approved · ' + review + ' need' + (review === 1 ? 's' : '') + ' review';
+  }
+
+  document.getElementById('proj-platform').addEventListener('change', function(e){
+    state.platform = e.target.value;
+    renderFieldTable();
+    syncPlatformToggle();
+  });
+
+  document.querySelectorAll('.pt-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      state.platform = btn.getAttribute('data-platform');
+      document.getElementById('proj-platform').value = state.platform;
+      renderFieldTable();
+      syncPlatformToggle();
+    });
+  });
+
+  function syncPlatformToggle(){
+    document.querySelectorAll('.pt-btn').forEach(function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-platform') === state.platform);
+    });
+  }
+
+  // ---------- Tabs ----------
+  document.querySelectorAll('.tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.getAttribute('data-tab')).classList.add('active');
+    });
+  });
+
+  // ---------- Trace panel ----------
+  var scrim = document.getElementById('scrim');
+  var panel = document.getElementById('trace-panel');
+  var currentTraceIdx = null;
+
+  function openTrace(idx){
+    currentTraceIdx = idx;
+    var f = FIELDS[idx];
+    document.getElementById('trace-source-label').textContent = f.sourceLabel;
+    document.getElementById('trace-quote').textContent = f.quote;
+    document.getElementById('trace-why-text').textContent = f.why;
+    document.getElementById('trace-field-name').textContent = 'Field: ' + f.name;
+    document.getElementById('trace-field-location').textContent = 'Entity: ' + f.entity + ' · Section: ' + (f.section || '—');
+    var reasonEl = document.getElementById('trace-reason-tag');
+    if(f.status === 'review' && REVIEW_REASON_LABEL[f.reviewReason]){
+      reasonEl.textContent = 'Flagged for review — ' + REVIEW_REASON_LABEL[f.reviewReason];
+      reasonEl.style.display = 'block';
+    } else {
+      reasonEl.style.display = 'none';
+    }
+    scrim.classList.add('show');
+    panel.classList.add('show');
+    panel.setAttribute('aria-hidden','false');
+
+    var row = document.getElementById('field-row-' + idx);
+    if(row){
+      row.classList.remove('row-flash'); void row.offsetWidth; row.classList.add('row-flash');
+    }
+    document.getElementById('trace-close').focus();
+  }
+
+  function closeTrace(){
+    scrim.classList.remove('show');
+    panel.classList.remove('show');
+    panel.setAttribute('aria-hidden','true');
+  }
+  document.getElementById('trace-close').addEventListener('click', closeTrace);
+  scrim.addEventListener('click', closeTrace);
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeTrace(); });
+
+  // ---------- Traceability index view ----------
+  function renderTraceIndex(){
+    var list = document.getElementById('trace-index-list');
+    list.innerHTML = '';
+    FIELDS.forEach(function(f, idx){
+      var row = document.createElement('button');
+      row.className = 'trace-index-row';
+      row.innerHTML =
+        '<div class="tir-left"><div class="tir-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>' +
+        '<div><div class="tir-name">' + f.name + '</div><div class="tir-project">Acme Field Ops Case Management · ' + f.entity + '</div></div></div>' +
+        '<div class="tir-source">' + f.sourceLabel + '</div>';
+      row.addEventListener('click', function(){ openTrace(idx); });
+      list.appendChild(row);
+    });
+  }
+
+  // ---------- Approve & push (illustrative only — ADO push is Phase 2, FR-21/22) ----------
+  document.getElementById('btn-approve').addEventListener('click', function(){
+    showToast('Approve & push is a Phase 2 feature — not yet wired to the backend');
+    setTimeout(function(){ showView('dashboard'); }, 900);
+  });
+
+  var toastTimer;
+  function showToast(text){
+    document.getElementById('toast-text').textContent = text;
+    var toast = document.getElementById('toast');
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toast.classList.remove('show'); }, 3200);
+  }
+
+  // ---------- Chat ----------
+  var notes = [];
+  var chatHistory = [];
+  var lastUserMsg = '';
+  var lastDiscussedField = null;
+  var chatOpen = false;
+  var chatPanel = document.getElementById('chat-panel');
+  var chatThreadEl = document.getElementById('chat-thread');
+
+  var VIEW_GREETING = {
+    dashboard: "Hi — I'm Wherefore. Open a project and I can help you review the draft, or just ask me anything here.",
+    'new-project': "Tell me anything about this engagement I should know before extraction starts — I'll fold it in.",
+    'project-detail': "Attach the transcript and screenshots when you're ready — extraction isn't wired up yet, but the upload is real.",
+    processing: "I'm extracting now. Feel free to add context while you wait — I'll factor it in before you review.",
+    review: "I'm looking at the Acme Field Ops draft with you. Ask why a field was drafted a certain way, or tell me what the transcript missed.",
+    traceability: "Ask me about any traced item, or open one below first for a more specific answer.",
+    settings: "Not much to discuss here yet — try me on a project draft instead."
+  };
+
+  function buildSystemPrompt(){
+    var platformLabel = state.platform === 'd365' ? 'Dynamics 365' : 'Salesforce';
+    var fieldLines = FIELDS.map(function(f){
+      var reviewNote = f.status === 'review'
+        ? ' — flagged for review (' + (REVIEW_REASON_LABEL[f.reviewReason] || 'needs confirmation') + ')'
+        : '';
+      return '- ' + f.name + ' [' + f.entity + ' / ' + f.section + '] (' + TYPE_MAP[f.type][state.platform] + (f.required ? ', required' : '') + '), source: ' + f.sourceLabel + reviewNote;
+    }).join('\n');
+    var notesLines = notes.length ? notes.map(function(n){ return '- ' + n; }).join('\n') : '(none logged yet)';
+    var lines = [
+      'You are Wherefore, an AI assistant embedded inside a requirements-drafting tool for technology consultants delivering ' + platformLabel + ' implementations.',
+      'The consultant is currently on the "' + (CRUMB_LABEL[state.view] || 'Dashboard') + '" screen of the project "Acme Field Ops Case Management" (a call-center intake system).',
+      lastDiscussedField ? ('They just opened the trace panel for the field "' + lastDiscussedField.name + '" — assume that is the topic unless they say otherwise.') : '',
+      '',
+      'Current draft field listing:',
+      fieldLines,
+      '',
+      'Current user story: Epic "Call Center Intake Case Management" > Feature "Case Creation & Assignment" > Story "As an Agent, I want to log a new call so a case record is created." Acceptance criteria: if urgency = High, case must be assigned within 15 minutes.',
+      '',
+      'Current RBP matrix: Agents can Create/Read/Update their own cases only. Supervisors can Create/Read/Update/Delete/Reassign all cases.',
+      '',
+      'Consultant notes logged so far:',
+      notesLines,
+      '',
+      'Answer questions about why something was drafted a certain way, grounded only in the data above — don\'t invent details it doesn\'t cover. If the consultant tells you something new (a correction, a missing rule, a role you didn\'t know about), acknowledge it and point them to the "Add as consultant note" button below the chat — you never silently change the draft yourself; a human approves every change first. Keep responses to 2–4 sentences, plain and direct, no filler.'
+    ];
+    return lines.filter(Boolean).join('\n');
+  }
+
+  function appendMsg(role, text){
+    var div = document.createElement('div');
+    div.className = 'chat-msg ' + role;
+    div.textContent = text;
+    chatThreadEl.appendChild(div);
+    chatThreadEl.scrollTop = chatThreadEl.scrollHeight;
+    return div;
+  }
+
+  function appendTyping(){
+    var div = document.createElement('div');
+    div.className = 'chat-typing';
+    div.id = 'chat-typing-indicator';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    chatThreadEl.appendChild(div);
+    chatThreadEl.scrollTop = chatThreadEl.scrollHeight;
+  }
+  function removeTyping(){
+    var el = document.getElementById('chat-typing-indicator');
+    if(el) el.remove();
+  }
+
+  function sendChatMessage(text){
+    appendMsg('user', text);
+    chatHistory.push({ role:'user', content:text });
+    lastUserMsg = text;
+    document.getElementById('chat-note-row').style.display = 'block';
+    appendTyping();
+    var sendBtn = document.getElementById('chat-send');
+    sendBtn.disabled = true;
+
+    fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        system: buildSystemPrompt(),
+        messages: chatHistory
+      })
+    })
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      removeTyping();
+      var textOut = (data.content || []).filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('\n').trim();
+      if(!textOut){ throw new Error('empty response'); }
+      appendMsg('assistant', textOut);
+      chatHistory.push({ role:'assistant', content:textOut });
+    })
+    .catch(function(){
+      removeTyping();
+      appendMsg('error', "Couldn't reach the live assistant just now. This works when viewed inside Claude.ai's artifact preview — try again, or reopen it there.");
+    })
+    .finally(function(){
+      sendBtn.disabled = false;
+    });
+  }
+
+  function updateChatContextLabel(){
+    var el = document.getElementById('chat-context');
+    if(!el) return;
+    el.textContent = state.view === 'dashboard' ? 'Dashboard' : ('Acme Field Ops · ' + (CRUMB_LABEL[state.view] || 'Dashboard'));
+  }
+
+  function openChat(){
+    chatPanel.classList.add('show');
+    chatPanel.setAttribute('aria-hidden','false');
+    chatOpen = true;
+    updateChatContextLabel();
+    if(chatHistory.length === 0){
+      appendMsg('assistant', VIEW_GREETING[state.view] || VIEW_GREETING.dashboard);
+    }
+    document.getElementById('chat-input').focus();
+  }
+  function closeChat(){
+    chatPanel.classList.remove('show');
+    chatPanel.setAttribute('aria-hidden','true');
+    chatOpen = false;
+  }
+  document.getElementById('chat-fab').addEventListener('click', function(){
+    if(chatOpen) closeChat(); else openChat();
+  });
+  document.getElementById('chat-close').addEventListener('click', closeChat);
+
+  document.getElementById('chat-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var input = document.getElementById('chat-input');
+    var text = input.value.trim();
+    if(!text) return;
+    input.value = '';
+    input.style.height = 'auto';
+    sendChatMessage(text);
+  });
+  document.getElementById('chat-input').addEventListener('input', function(){
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 80) + 'px';
+  });
+  document.getElementById('chat-input').addEventListener('keydown', function(e){
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      document.getElementById('chat-form').dispatchEvent(new Event('submit', { cancelable:true }));
+    }
+  });
+
+  document.getElementById('trace-discuss').addEventListener('click', function(){
+    if(currentTraceIdx === null) return;
+    lastDiscussedField = FIELDS[currentTraceIdx];
+    closeTrace();
+    openChat();
+    appendMsg('assistant', 'Looking at "' + lastDiscussedField.name + '" — what would you like to know or add?');
+  });
+
+  document.getElementById('btn-add-note').addEventListener('click', function(){
+    if(!lastUserMsg) return;
+    notes.push(lastUserMsg);
+    renderNotes();
+    document.getElementById('chat-note-row').style.display = 'none';
+    appendMsg('assistant', 'Logged as a consultant note on the draft. It won\u2019t change any field automatically — review it on the Field Listing tab when you\u2019re ready.');
+  });
+
+  function renderNotes(){
+    var section = document.getElementById('notes-section');
+    var list = document.getElementById('notes-list');
+    if(notes.length === 0){ section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    list.innerHTML = '';
+    notes.forEach(function(n){
+      var div = document.createElement('div');
+      div.className = 'note-card';
+      var tag = document.createElement('span');
+      tag.className = 'note-tag';
+      tag.textContent = 'Via chat';
+      div.appendChild(tag);
+      div.appendChild(document.createTextNode(n));
+      list.appendChild(div);
+    });
+  }
+
+  // ---------- Init ----------
+  renderFieldTable();
+  renderTraceIndex();
+  loadProjects();
+})();
+</script>
+</body>
+</html>

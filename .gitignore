@@ -1,0 +1,18 @@
+# Local config — contains the Anthropic API key (TR-4). Never commit this.
+config/config.json
+
+# Local data: SQLite DB + uploaded discovery material.
+data/
+
+# Personal/business artifacts — not part of the open-source project.
+wherefore-pitch.pptx
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# OS
+.DS_Store

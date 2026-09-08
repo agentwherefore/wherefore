@@ -1,0 +1,11 @@
+[00:00:15] Consultant: Thanks for hopping on — walk me through what happens when a call comes in.
+[00:00:42] SME: Sure. An agent picks up, and the first thing they do is open the intake screen and log the caller's name and phone number.
+[00:01:10] SME: We actually keep a separate caller lookup sheet for personal details like date of birth, in case we need to verify identity later — that's not on the main intake screen.
+[00:02:05] SME: Then they pick a call reason from a dropdown, and set the status — New, Assigned, In Progress, Closed, or sometimes Escalated if it needs a supervisor.
+[00:03:30] SME: Cases get assigned to a specific field agent based on region.
+[00:04:12] SME: One thing — the call reason categories, we actually add new ones every quarter, so don't hardcode a fixed list. IT has to be able to add a category without a deployment.
+[00:05:40] SME: If it's flagged urgent or a safety issue, it has to be assigned to someone within 15 minutes, no exceptions.
+[00:06:20] SME: Agents only ever see their own assigned cases — they can't browse anyone else's queue.
+[00:06:55] SME: Supervisors are different — they can see every case across the team, and they're the ones who reassign a case if an agent is out sick or overloaded.
+[00:07:30] Consultant: Got it. Anything else that changes the picture — any other roles?
+[00:07:50] SME: Not really, just Agent and Supervisor for now.

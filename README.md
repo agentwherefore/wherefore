@@ -15,6 +15,26 @@ See [`docs/functional-spec.md`](docs/functional-spec.md) for what it does
 and why, and [`docs/technical-spec.md`](docs/technical-spec.md) for
 architecture, data model, and build details.
 
+## Screenshots
+
+**Field Listing, with traceability.** Every field cites the exact
+transcript line it came from — here, why "Call Reason" is drafted as a
+Lookup instead of a static Choice.
+
+![Field Listing with a source trace panel open](docs/screenshots/field-listing-traceability.jpg)
+
+**Process Flow.** The current (as-is) process as described in discovery,
+not the future system being designed — kept as its own artifact so it
+doesn't get conflated with the Story Tree.
+
+![Process Flow diagram](docs/screenshots/process-flow.jpg)
+
+**Story Tree.** Epic → Feature → Story → Acceptance Criteria, with
+multiple testable Given/When/Then criteria per story — not a single
+paraphrase of the underlying rule.
+
+![Story Tree with multi-criteria acceptance criteria](docs/screenshots/story-tree.jpg)
+
 ## Status
 
 Private portfolio/demo project, built solo. Single-operator by design —
